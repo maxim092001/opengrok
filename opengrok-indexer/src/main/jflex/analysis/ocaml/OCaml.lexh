@@ -1,0 +1,124 @@
+/*
+ * CDDL HEADER START
+ *
+ * The contents of this file are subject to the terms of the
+ * Common Development and Distribution License (the "License").
+ * You may not use this file except in compliance with the License.
+ *
+ * See LICENSE.txt included in this distribution for the specific
+ * language governing permissions and limitations under the License.
+ *
+ * When distributing Covered Code, include this CDDL HEADER in each
+ * file and include the License file at LICENSE.txt.
+ * If applicable, add the following below this CDDL HEADER, with the
+ * fields enclosed by brackets "[]" replaced with your own identifying
+ * information: Portions Copyright [yyyy] [name of copyright owner]
+ *
+ * CDDL HEADER END
+ */
+
+/*
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Portions Copyright (c) 2023, Maxim Grankin <mgrankin@bloomberg.net>.
+ */
+
+/*
+ * OCaml (5.1) Lexical conventions: https://v2.ocaml.org/releases/5.1/htmlman/lex.html#sss:lex:identifiers
+ */
+
+/*
+ * Identifiers:
+ *
+ * ident             ::= (letter | _) {letter | 0...9 | _ | ' }
+ * capitalized-ident ::= (A...Z) {letter | 0...9 | _ | ' }
+ * lowercase-ident   ::= (a...z | _) {letter | 0...9 | _ | ' }
+ * letter            ::= A...Z | a...z
+ */
+ident = ({letter} | [\_]) {{letter} | {dec-digit} | [\_\']}*
+capitalized-ident = ({uppercase-letter}) {{letter} | {dec-digit} | [\_\']}*
+lowercase-ident = ({lowercase-letter} | [\_]) {{letter} | {dec-digit} | [\_\']}*
+letter = ({lowercase-letter} | {uppercase-letter})
+
+lowercase-letter = [a-z]
+uppercase-letter = [A-Z]
+
+
+/*
+ * Integer literals:
+ *
+ * integer-literal   ::= [-] (0...9) {0...9 | _}
+                     |   [-] (0x | 0X) (0...9 | A...F | a...f) {0...9 | A...F | a...f | _ }
+                     |   [-] (0o | 0O) (0...7) { 0...7 | _ }
+                     |   [-] (0b | 0B) (0...1) { 0...1 | _ }
+ * int32-literal     ::= integer-literal l
+ * int64-literal     ::= integer-literal L
+ * nativeint-literal ::= integer-literal n
+ */
+integer-literal = [\-]? (dec-numeral | hex-numeral | oct-numeral | bin-numeral)
+int32-literal = {integer-literal} l
+int64-literal = {integer-literal} L
+nativeint-literal = {integer-literal} n
+
+dec-numeral = {dec-digit} {dec-digit | [\_]}*
+hex-numeral = [0][xX] {hexDigit} {hex-digit-underscore}*
+oct-numeral = [0][oO] {octDigit} {oct-digit-underscore}*
+bin-numeral = [0][bB] {binDigit} {bin-digit-underscore}*
+
+dec-digit = [0-9]
+dec-digit-underscore = {{dec-digit} | [\_]}
+
+hex-digit = [0-9A-Fa-f]
+hex-digit-underscore = {{hex-digit} | [\_]}
+
+oct-digit = [0-7]
+oct-digit-underscore = {{oct-digit} | [\_]}
+
+bin-digit = [0-1]
+bin-digit-underscore = {{bin-digit} | [\_]}
+
+/*
+ * Floating-point literals
+ *
+ * float-literal ::= [-] (0...9) { 0...9 | _ } [. { 0...9 | _ }] [(e | E) [+ | -] (0...9) { 0...9 | _ }]
+ *               |   [-] (0x | 0X) (0...9 | A...F | a...f) { 0...9 | A...F | a...F | _ } [. { 0...9 | A...F | a...f | _}] [(p | P) [+ | -] (0...9) { 0...9 | _ }]
+ */
+
+float-literal = [\-]? ({float-dec-number} | {float-hex-number})
+
+float-dec-number = {dec-digit} {dec-digit-underscore}* {. {dec-digit-underscore}*}? {exponential-part}?
+exponential-part = [eE] [\+\-]? {dec-digit} {dec-digit-underscore}*
+
+float-hex-number = {hex-numeral} {. {hex-digit-underscore}*}? {exponential-hex-part}?
+exponential-hex-part = [pP] [\+\-]? {dec-digit} {dec-digit-underscore}*
+
+/*
+ * The following characters are considered as blanks: space, horizontal tabulation, carriage return, line feed
+ * and form feed.
+ * TODO character literals
+ * TODO strings (backslash for multiline string may be seen in haskell impl)
+ */
+
+/*
+ * Naming labels
+ *
+ * label-name ::= lowercase-ident
+ * label      ::= ~ label-name :
+ * optlabel   ::= ? label-name :
+ */
+label-name = {lowercase-ident}
+label = (~ {label-name} :)
+optlabel = (? {label-name} :)
+
+/*
+ * Prefix and infix symbols
+ * infix-symbol       ::= (core-operator-char | % | <) { operator-char }
+                      |    # {operator-char}+
+ * prefix-symbol      ::= ! { operator-char }
+                      |   (? | ~) { operator-char}+
+ * operator-char      ::= ~ | ! | ? | core-operator-char | % | < | : | .
+ * core-operator-char ::= $ | & | * | + | - | / | = | > | @ | ^ | | // the last symbol is |
+ */
+infix-symbol = ({core-operator-char} | [\%] | [\<]) {operator-char}* | (# {operator-char}+)
+prefix-symbol = (! {operator-char} ) | ([\?] | [\~]) {operator-char}+
+operator-char = [\~] | [\!] | [\?] | {core-operator-char] | [\%] | [\<] | [\:] | [\.]
+core-operator-char = [\$] | [\&] | [\*] | [\+] | [\-] | [\/] | [\=] | [\>] | [\@] | [\^] | [\|]

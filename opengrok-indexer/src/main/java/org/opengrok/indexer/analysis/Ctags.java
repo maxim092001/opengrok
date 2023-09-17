@@ -441,6 +441,13 @@ public class Ctags implements Resettable {
         command.add("--regex-scala=/^[[:space:]]*package[[:space:]]+([a-zA-Z0-9_.]+)/\\1/p/");
     }
 
+    private void addOcamlSupport(List<String> command) {
+        if (!ctagsLanguages.contains("OCaml")) { // Built-in would be capitalized.
+            command.add("--langdef=ocaml"); // Lower-case if user-defined.
+        }
+
+    }
+
     /**
      * Run ctags on a file.
      * @param file file path to process
